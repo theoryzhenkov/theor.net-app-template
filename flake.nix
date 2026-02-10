@@ -14,22 +14,11 @@
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
-            # Infra tools (keep these)
             just
             docker
             sops
             age
-
-            # TODO: Add your runtime here, e.g.:
-            # bun
-            # nodejs_22
-            # python3
           ];
-
-          shellHook = ''
-            echo "myapp.theor.net dev shell"
-            echo "Run 'just' to see available commands."
-          '';
         };
       });
 }

@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.envrc
+.direnv
+.DS_Store
+data/
+
+.age-key.txt
+.cursor

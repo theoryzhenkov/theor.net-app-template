@@ -1,0 +1,57 @@
+name: deploy-myapp
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy-image:
+    uses: theoryzhenkov/.github/.github/workflows/deploy-docker.yml@main
+    with:
+      app_name: myapp
+
+  deploy-secrets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for secrets file
+        id: check
+        run: |
+          if [ -f secrets/production.enc.yaml ]; then
+            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+            echo "No secrets/production.enc.yaml found, skipping"
+          fi
+
+      - name: Login to GHCR
+        if: steps.check.outputs.has_secrets == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install crane
+        if: steps.check.outputs.has_secrets == 'true'
+        uses: imjasonh/setup-crane@v0.4
+
+      - name: Push secrets artifact
+        if: steps.check.outputs.has_secrets == 'true'
+        run: |
+          # Create a single-layer OCI image with the encrypted secrets file
+          cp secrets/production.enc.yaml secrets.enc.yaml
+          tar cf secrets-layer.tar secrets.enc.yaml
+          crane append -f secrets-layer.tar \
+            -t ghcr.io/${{ github.repository }}/myapp-secrets:production
+          rm -f secrets.enc.yaml secrets-layer.tar
+          echo "Secrets artifact pushed to ghcr.io/${{ github.repository }}/myapp-secrets:production"

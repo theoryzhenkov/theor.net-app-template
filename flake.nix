@@ -16,8 +16,6 @@
           packages = with pkgs; [
             just
             docker
-            sops
-            age
           ];
         };
       });
